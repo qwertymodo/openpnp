@@ -80,8 +80,17 @@ public abstract class AbstractHead extends AbstractModelObject implements Head {
         ResetToHomeLocation
     }
 
+    public enum VisualHomingDirection {
+        Direct,
+        XFirst,
+        YFirst
+    }
+
     @Attribute(required = false)
     private VisualHomingMethod visualHomingMethod = VisualHomingMethod.None;
+
+    @Attribute(required = false)
+    private VisualHomingDirection visualHomingDirection = VisualHomingDirection.Direct;
 
     @Element(required = false)
     protected Location homingFiducialLocation = new Location(LengthUnit.Millimeters);
@@ -427,6 +436,14 @@ public abstract class AbstractHead extends AbstractModelObject implements Head {
 
     public void setVisualHomingMethod(VisualHomingMethod visualHomingMethod) {
         this.visualHomingMethod = visualHomingMethod;
+    }
+
+    public VisualHomingDirection getVisualHomingDirection() {
+        return visualHomingDirection;
+    }
+
+    public void setVisualHomingDirection(VisualHomingDirection visualHomingDirection) {
+        this.visualHomingDirection = visualHomingDirection;
     }
 
     public Location getHomingFiducialLocation() {

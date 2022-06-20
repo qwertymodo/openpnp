@@ -41,6 +41,7 @@ import org.openpnp.gui.support.ActuatorsComboBoxModel;
 import org.openpnp.gui.support.LengthConverter;
 import org.openpnp.gui.support.MutableLocationProxy;
 import org.openpnp.machine.reference.ReferenceHead;
+import org.openpnp.spi.base.AbstractHead.VisualHomingDirection;
 import org.openpnp.spi.base.AbstractHead.VisualHomingMethod;
 import org.openpnp.util.UiUtils;
 
@@ -85,6 +86,8 @@ public class ReferenceHeadConfigurationWizard extends AbstractConfigurationWizar
                 FormSpecs.RELATED_GAP_ROWSPEC,
                 FormSpecs.DEFAULT_ROWSPEC,
                 FormSpecs.RELATED_GAP_ROWSPEC,
+                FormSpecs.DEFAULT_ROWSPEC,
+                FormSpecs.RELATED_GAP_ROWSPEC,
                 FormSpecs.DEFAULT_ROWSPEC,}));
 
         JLabel lblX = new JLabel("X");
@@ -119,7 +122,18 @@ public class ReferenceHeadConfigurationWizard extends AbstractConfigurationWizar
             }
         });
         panel.add(visualHomingMethod, "4, 6, 3, 1, fill, default");
-        
+
+        JLabel lblHomingDirection = new JLabel("Homing Direction");
+        panel.add(lblHomingDirection, "2, 8, right, default");
+
+        visualHomingDirection = new JComboBox(VisualHomingDirection.values());
+        visualHomingDirection.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                adaptDialog();
+            }
+        });
+        panel.add(visualHomingDirection, "4, 8, 3, 1, fill, default");
+
         panel_1 = new JPanel();
         panel_1.setBorder(null);
         panel.add(panel_1, "10, 6, left, fill");
@@ -150,22 +164,22 @@ public class ReferenceHeadConfigurationWizard extends AbstractConfigurationWizar
 
         JLabel lblWarningChangingThese = new JLabel("<html><p>\r\n<strong>Important Notice</strong>: the homing fiducial should be mounted \r\nand configured early in the build process, before you start capturing a large number of\r\nlocations for the Machine Setup (nozzle tip changer, feeders etc.) \r\n</p>\r\n<p style=\"color:red\">Each time the above settings are changed or the fiducial physically moved, all the already captured locations in the Machine Setup will be broken. </p></html>");
         lblWarningChangingThese.setForeground(Color.BLACK);
-        panel.add(lblWarningChangingThese, "4, 8, 7, 1");
+        panel.add(lblWarningChangingThese, "4, 10, 7, 1");
 
         JLabel lblParkLocation = new JLabel("Park Location");
-        panel.add(lblParkLocation, "2, 10, right, default");
+        panel.add(lblParkLocation, "2, 12, right, default");
 
         parkX = new JTextField();
-        panel.add(parkX, "4, 10, fill, default");
+        panel.add(parkX, "4, 12, fill, default");
         parkX.setColumns(5);
 
         parkY = new JTextField();
         parkY.setColumns(5);
-        panel.add(parkY, "6, 10, fill, default");
+        panel.add(parkY, "6, 12, fill, default");
 
         parkLocation = new LocationButtonsPanel(parkX, parkY, (JTextField) null, (JTextField) null);
         parkLocation.setShowToolButtons(false); 
-        panel.add(parkLocation, "10, 10, left, fill");
+        panel.add(parkLocation, "10, 12, left, fill");
         
         JPanel panelCalibration = new JPanel();
         panelCalibration.setBorder(new TitledBorder(UIManager.getBorder("TitledBorder.border"), "Calibration Rig", TitledBorder.LEADING, TitledBorder.TOP, null, new Color(0, 0, 0)));
@@ -371,6 +385,7 @@ public class ReferenceHeadConfigurationWizard extends AbstractConfigurationWizar
     private JTextField homingFiducialY;
 
     private JComboBox visualHomingMethod;
+    private JComboBox visualHomingDirection;
     private LocationButtonsPanel homeLocation;
     private LocationButtonsPanel parkLocation;
     private JButton btnHomingTest;

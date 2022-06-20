@@ -21,6 +21,7 @@ import org.openpnp.gui.components.CameraView;
 import org.openpnp.gui.support.LengthConverter;
 import org.openpnp.gui.support.PropertySheetWizardAdapter;
 import org.openpnp.gui.support.Wizard;
+import org.openpnp.machine.reference.ReferenceHead;
 import org.openpnp.machine.reference.vision.wizards.ReferenceFiducialLocatorConfigurationWizard;
 import org.openpnp.machine.reference.vision.wizards.ReferenceFiducialLocatorPartConfigurationWizard;
 import org.openpnp.model.Board;
@@ -38,7 +39,9 @@ import org.openpnp.model.Placement.Type;
 import org.openpnp.model.Point;
 import org.openpnp.spi.Camera;
 import org.openpnp.spi.FiducialLocator;
+import org.openpnp.spi.Head;
 import org.openpnp.spi.PropertySheetHolder;
+import org.openpnp.spi.base.AbstractHead.VisualHomingDirection;
 import org.openpnp.util.IdentifiableList;
 import org.openpnp.util.MovableUtils;
 import org.openpnp.util.OpenCvUtils;
@@ -146,7 +149,7 @@ public class ReferenceFiducialLocator implements FiducialLocator {
         List<Location> expectedLocations = new ArrayList<>();
         List<Location> measuredLocations = new ArrayList<>();
         for (Placement fiducial : tsm.getTravel()) {
-            Location measuredLocation = getFiducialLocation(boardLocation, fiducial);
+            Location measuredLocation = getFiducialLocation(boardLocation, fiducial, VisualHomingDirection.Direct);
             if (measuredLocation == null) {
                 throw new Exception("Unable to locate " + fiducial.getId());
             }
@@ -290,16 +293,18 @@ public class ReferenceFiducialLocator implements FiducialLocator {
      * the location is returned. If the fiducial was not able to be located with any degree of
      * certainty the function returns null.
      *
-     * @param location, part
+     * @param location, part, direction
      * @return
      * @throws Exception
      */
     public Location getHomeFiducialLocation(Location location, Part part) throws Exception {
         // Because the homing fiducial must by definition be at default Z, we supply it here,
-        // so the 3D units per pixel scaling will be correct. 
-        Camera camera = Configuration.get().getMachine().getDefaultHead().getDefaultCamera();
+        // so the 3D units per pixel scaling will be correct.
+        Head head = Configuration.get().getMachine().getDefaultHead();
+        Camera camera = head.getDefaultCamera();
         location = location.deriveLengths(null, null, camera.getDefaultZ(), null);
-        return getFiducialLocation(location, part);
+        VisualHomingDirection direction = head instanceof ReferenceHead ? ((ReferenceHead) head).getVisualHomingDirection() : VisualHomingDirection.Direct;
+        return getFiducialLocation(location, part, direction);
     }
 
     /**
@@ -310,11 +315,11 @@ public class ReferenceFiducialLocator implements FiducialLocator {
      * the location is returned. If the fiducial was not able to be located with any degree of
      * certainty the function returns null.
      * 
-     * @param fid
+     * @param boardLocation, fid, direction
      * @return
      * @throws Exception
      */
-    private Location getFiducialLocation(BoardLocation boardLocation, Placement fid)
+    private Location getFiducialLocation(BoardLocation boardLocation, Placement fid, VisualHomingDirection direction)
             throws Exception {
         Logger.debug("Locating {}", fid.getId());
 
@@ -327,7 +332,7 @@ public class ReferenceFiducialLocator implements FiducialLocator {
         Location location =
                 Utils2D.calculateBoardPlacementLocation(boardLocation, fid.getLocation());
 
-        return getFiducialLocation(location, part);
+        return getFiducialLocation(location, part, direction);
     }
 
     public CvPipeline getFiducialPipeline(Camera camera, Part part) throws Exception {
@@ -364,7 +369,7 @@ public class ReferenceFiducialLocator implements FiducialLocator {
         return pipeline;
     }
 
-    private Location getFiducialLocation(Location nominalLocation, Part part) throws Exception {
+    private Location getFiducialLocation(Location nominalLocation, Part part, VisualHomingDirection direction) throws Exception {
         Location location = nominalLocation;
         Camera camera = Configuration.get().getMachine().getDefaultHead().getDefaultCamera();
 
@@ -374,6 +379,24 @@ public class ReferenceFiducialLocator implements FiducialLocator {
         }
 
         Logger.debug("Looking for {} at {}", part.getId(), location);
+
+        switch(direction) {
+        case Direct:
+            break;
+
+        case XFirst:
+            location = new Location(location.getUnits(), location.getX(), camera.getLocation().getY(), location.getZ(), location.getRotation());
+            MovableUtils.moveToLocationAtSafeZ(camera, location);
+            location = nominalLocation;
+            break;
+
+        case YFirst:
+            location = new Location(location.getUnits(), camera.getLocation().getX(), location.getY(), location.getZ(), location.getRotation());
+            MovableUtils.moveToLocationAtSafeZ(camera, location);
+            location = nominalLocation;
+            break;
+        }
+
         MovableUtils.moveToLocationAtSafeZ(camera, location);
 
         List<Location> matchedLocations = new ArrayList<Location>();
